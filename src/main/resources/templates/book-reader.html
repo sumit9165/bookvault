@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta(${book.title + ' — Reader'})}"/>
+  <style>
+    body { margin: 0; background: #1a1a2e; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    .reader-topbar {
+      height: 52px;
+      background: var(--navy-950);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .reader-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      color: var(--cream-100);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
+    }
+
+    .reader-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .reader-btn {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: var(--font-body);
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .reader-btn:hover { background: var(--gold-glow); color: var(--gold-400); border-color: var(--border-medium); }
+
+    .page-info {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 0 0.5rem;
+    }
+
+    #pdf-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #2d2d2d;
+    }
+
+    .no-pdf {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      gap: 1rem;
+    }
+
+    .zoom-slider {
+      -webkit-appearance: none;
+      width: 80px;
+      height: 3px;
+      background: var(--border-subtle);
+      border-radius: 2px;
+      outline: none;
+    }
+    .zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--gold-400);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<!-- Top Bar -->
+<div class="reader-topbar">
+  <div style="display:flex;align-items:center;gap:1rem">
+    <a href="/books" class="reader-btn">← Library</a>
+    <h1 class="reader-title" th:text="${book.title}">Book Title</h1>
+    <span class="text-muted text-sm italic" th:text="'by ' + ${book.author}"></span>
+  </div>
+
+  <div class="reader-controls">
+    <span class="book-version text-sm" th:text="'v' + ${book.versionRelease}">v1.0</span>
+
+    <button class="reader-btn" onclick="zoomOut()">−</button>
+    <input type="range" class="zoom-slider" id="zoomSlider" min="50" max="200" value="100" oninput="applyZoom(this.value)"/>
+    <button class="reader-btn" onclick="zoomIn()">+</button>
+    <span class="page-info" id="zoomLabel">100%</span>
+
+    <a th:href="@{/books/{id}(id=${book.id})}" class="reader-btn">ℹ️ Details</a>
+  </div>
+</div>
+
+<!-- PDF Viewer -->
+<th:block th:if="${book.hasPdf}">
+  <iframe id="pdf-frame"
+          th:src="@{/api/v1/books/{id}/pdf(id=${book.id})}"
+          title="PDF Viewer"
+          allowfullscreen>
+  </iframe>
+</th:block>
+
+<div th:unless="${book.hasPdf}" class="no-pdf">
+  <span style="font-size:4rem">📭</span>
+  <h2>No PDF Available</h2>
+  <p>The admin hasn't uploaded a PDF for this book yet.</p>
+  <a th:href="@{/books/{id}(id=${book.id})}" class="btn btn-outline">Back to Details</a>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+<script>
+  let currentZoom = 100;
+  const frame = document.getElementById('pdf-frame');
+  const label = document.getElementById('zoomLabel');
+  const slider = document.getElementById('zoomSlider');
+
+  function applyZoom(val) {
+    currentZoom = parseInt(val);
+    if (frame) {
+      frame.style.transform = `scale(${currentZoom / 100})`;
+      frame.style.transformOrigin = 'top left';
+      frame.style.width = (100 * 100 / currentZoom) + '%';
+      frame.style.height = 'calc(' + (100 * 100 / currentZoom) + 'vh - ' + (5200 / currentZoom) + 'px)';
+    }
+    label.textContent = val + '%';
+    slider.value = val;
+  }
+
+  function zoomIn()  { applyZoom(Math.min(currentZoom + 10, 200)); }
+  function zoomOut() { applyZoom(Math.max(currentZoom - 10, 50));  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === '=') { e.preventDefault(); zoomIn(); }
+    if (e.ctrlKey && e.key === '-') { e.preventDefault(); zoomOut(); }
+  });
+</script>
+</body>
+</html>

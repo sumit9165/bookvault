@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('Library')}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<main style="padding:2.5rem 0 5rem">
+  <div class="container">
+
+    <!-- Page Header -->
+    <div style="margin-bottom:2rem">
+      <h1 style="font-size:2.2rem;margin-bottom:0.5rem">
+        <span th:if="${query != null}">Search: "<span class="text-gold" th:text="${query}"></span>"</span>
+        <span th:if="${activeGenre != null}">Genre: <span class="text-gold" th:text="${activeGenre}"></span></span>
+        <span th:if="${query == null and activeGenre == null}">The Library</span>
+      </h1>
+      <p class="text-muted" th:if="${books != null}">
+        <span th:text="${books.totalElements}">0</span> books found
+      </p>
+    </div>
+
+    <!-- Toolbar: Search + Genre filter -->
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;align-items:flex-start">
+      <div class="search-wrapper" style="flex:1;min-width:240px">
+        <span class="search-icon">🔍</span>
+        <input id="searchInput" type="text" class="form-control search-input"
+               placeholder="Search by title, author, genre…"
+               th:value="${query}"/>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <a href="/books" class="btn btn-sm" th:classappend="${activeGenre == null and query == null} ? 'btn-primary' : 'btn-ghost'">All</a>
+        <a th:each="g : ${genres}"
+           th:href="@{/books(genre=${g})}"
+           th:text="${g}"
+           class="btn btn-sm"
+           th:classappend="${activeGenre != null and activeGenre == g} ? 'btn-primary' : 'btn-ghost'">Genre</a>
+      </div>
+    </div>
+
+    <!-- Books Grid -->
+    <div th:if="${books != null and !#lists.isEmpty(books.content)}" class="books-grid books-grid-lg">
+      <article th:each="book : ${books.content}"
+               class="book-card"
+               th:onclick="|window.location.href='/books/${book.id}'|">
+        <div class="book-cover" style="aspect-ratio:3/4">
+          <img th:if="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()}"
+               th:src="${book.coverImageUrl}" th:alt="${book.title}"
+               loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+          <div class="book-cover-placeholder"
+               th:style="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()} ? 'display:none' : 'display:flex'">
+            📖
+            <span th:text="${book.author}"></span>
+          </div>
+        </div>
+        <div class="book-info">
+          <h3 class="book-title" th:text="${book.title}">Title</h3>
+          <p class="book-author" th:text="${book.author}">Author</p>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-top:0.4rem">
+            <span class="book-version" th:text="'v' + ${book.versionRelease}">v1.0</span>
+            <span class="book-genre-badge" th:if="${book.genre}" th:text="${book.genre}">Genre</span>
+          </div>
+          <div style="margin-top:0.5rem;color:var(--text-muted);font-size:0.8rem">
+            👁 <span th:text="${book.viewCount}">0</span> views
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${books == null or #lists.isEmpty(books.content)}" class="empty-state">
+      <span class="empty-icon">🔍</span>
+      <h3>No books found</h3>
+      <p>Try a different search term or browse all genres.</p>
+      <a href="/books" class="btn btn-outline mt-2">Clear Search</a>
+    </div>
+
+    <!-- Pagination -->
+    <div th:if="${books != null and books.totalPages > 1}" class="pagination">
+      <a th:if="${!books.first}"
+         th:href="@{/books(page=${books.page - 1}, query=${query}, genre=${activeGenre})}"
+         class="page-btn">←</a>
+
+      <th:block th:each="i : ${#numbers.sequence(0, books.totalPages - 1)}">
+        <a th:href="@{/books(page=${i}, query=${query}, genre=${activeGenre})}"
+           th:text="${i + 1}"
+           class="page-btn"
+           th:classappend="${i == books.page} ? ' active' : ''">1</a>
+      </th:block>
+
+      <a th:if="${!books.last}"
+         th:href="@{/books(page=${books.page + 1}, query=${query}, genre=${activeGenre})}"
+         class="page-btn">→</a>
+    </div>
+
+  </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: footer}"/>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+</body>
+</html>

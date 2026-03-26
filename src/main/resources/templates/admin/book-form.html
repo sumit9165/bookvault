@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta(${book != null ? 'Edit Book' : 'Add Book'})}"/>
+  <style>
+    .file-drop-zone {
+      border: 2px dashed var(--border-medium);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .file-drop-zone:hover { border-color: var(--gold-400); background: var(--gold-glow); }
+    .file-drop-zone .drop-icon { font-size: 2rem; }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<div class="admin-layout">
+  <aside class="sidebar">
+    <ul class="sidebar-nav">
+      <li><a href="/admin" class="sidebar-link">📊 Dashboard</a></li>
+      <li><a href="/admin/books" class="sidebar-link">📚 Manage Books</a></li>
+      <li><a href="/admin/books/new" class="sidebar-link active">➕ Add Book</a></li>
+      <li><a href="/books" class="sidebar-link">🌐 Public Library</a></li>
+    </ul>
+  </aside>
+
+  <div class="main-content">
+    <div style="max-width:760px">
+      <!-- Header -->
+      <div style="margin-bottom:2rem">
+        <a href="/admin/books" class="btn btn-ghost btn-sm" style="margin-bottom:1rem">← Back to Books</a>
+        <h1 style="font-size:1.8rem;margin-bottom:0.25rem"
+            th:text="${book != null ? 'Edit Book' : 'Add New Book'}">Add Book</h1>
+        <p class="text-muted" th:if="${book != null}">
+          Last updated: <span th:text="${book.updatedAt}" class="text-mono text-sm"></span>
+        </p>
+      </div>
+
+      <!-- Error Banner -->
+      <div id="bookFormError" class="alert alert-error hidden" style="margin-bottom:1rem"></div>
+
+      <form th:onsubmit="${book != null ? '|submitBookForm(event,' + book.id + ')|' : 'submitBookForm(event)'}">
+
+        <!-- Section: Core Info -->
+        <div class="card mb-3">
+          <div class="card-header">📖 Book Information</div>
+          <div class="card-body">
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Title *</label>
+                <input name="title" type="text" class="form-control"
+                       placeholder="e.g. Clean Code"
+                       th:value="${book?.title}" required maxlength="500"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Author *</label>
+                <input name="author" type="text" class="form-control"
+                       placeholder="e.g. Robert C. Martin"
+                       th:value="${book?.author}" required maxlength="300"/>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Version / Release *</label>
+                <input name="versionRelease" type="text" class="form-control"
+                       placeholder="e.g. 1.0, 2nd Edition, 2024"
+                       th:value="${book?.versionRelease}" required maxlength="50"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">ISBN</label>
+                <input name="isbn" type="text" class="form-control"
+                       placeholder="978-0-13-468599-1"
+                       th:value="${book?.isbn}" maxlength="20"/>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="4"
+                        placeholder="A brief description of the book…"
+                        maxlength="5000" th:text="${book?.description}"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Metadata -->
+        <div class="card mb-3">
+          <div class="card-header">🏷 Metadata</div>
+          <div class="card-body">
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Genre</label>
+                <input name="genre" type="text" class="form-control" list="genreList"
+                       placeholder="e.g. Programming"
+                       th:value="${book?.genre}"/>
+                <datalist id="genreList">
+                  <option value="Programming"/>
+                  <option value="Technology"/>
+                  <option value="Science Fiction"/>
+                  <option value="Fantasy"/>
+                  <option value="Business"/>
+                  <option value="Self-Help"/>
+                  <option value="History"/>
+                  <option value="Biography"/>
+                  <option value="Science"/>
+                  <option value="Mathematics"/>
+                </datalist>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Publisher</label>
+                <input name="publisher" type="text" class="form-control"
+                       placeholder="e.g. O'Reilly Media"
+                       th:value="${book?.publisher}" maxlength="300"/>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Language</label>
+                <select name="language" class="form-control">
+                  <option value="English" th:selected="${book == null or book.language == 'English'}">English</option>
+                  <option value="Hindi" th:selected="${book?.language == 'Hindi'}">Hindi</option>
+                  <option value="French" th:selected="${book?.language == 'French'}">French</option>
+                  <option value="German" th:selected="${book?.language == 'German'}">German</option>
+                  <option value="Spanish" th:selected="${book?.language == 'Spanish'}">Spanish</option>
+                  <option value="Chinese" th:selected="${book?.language == 'Chinese'}">Chinese</option>
+                  <option value="Japanese" th:selected="${book?.language == 'Japanese'}">Japanese</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Page Count</label>
+                <input name="pageCount" type="number" class="form-control"
+                       placeholder="350" min="1" max="99999"
+                       th:value="${book?.pageCount}"/>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cover Image URL</label>
+              <input name="coverImageUrl" type="url" class="form-control"
+                     placeholder="https://example.com/cover.jpg"
+                     th:value="${book?.coverImageUrl}"/>
+            </div>
+
+            <!-- Visibility Toggle -->
+            <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;background:rgba(212,168,67,0.05);border-radius:var(--radius-sm);border:1px solid var(--border-subtle)">
+              <input type="checkbox" id="isPublic" name="isPublic"
+                     th:checked="${book == null or book.isPublic}"
+                     style="width:18px;height:18px;accent-color:var(--gold-400)"/>
+              <div>
+                <label for="isPublic" style="font-weight:600;cursor:pointer">Make this book publicly visible</label>
+                <div class="text-muted text-sm">When checked, the book title, author and version will be visible to everyone. Only logged-in users can read the full content.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: PDF Upload -->
+        <div class="card mb-3">
+          <div class="card-header">📄 PDF File</div>
+          <div class="card-body">
+            <th:block th:if="${book != null and book.hasPdf}">
+              <div class="alert alert-success mb-2">
+                Current PDF: <strong th:text="${book.pdfFileName}"></strong>
+                (<span th:text="${#numbers.formatDecimal(book.pdfFileSize / 1048576.0, 1, 2)}">0</span> MB)
+                — Upload a new file to replace it.
+              </div>
+            </th:block>
+
+            <label id="pdfLabel" class="file-drop-zone" for="pdfFile">
+              <span class="drop-icon">📂</span>
+              <span>Drag & drop PDF here, or click to browse</span>
+              <span class="text-xs">Max 50MB · PDF only</span>
+            </label>
+            <input type="file" id="pdfFile" name="pdfFile" accept="application/pdf"
+                   style="display:none"/>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="display:flex;gap:1rem;justify-content:flex-end">
+          <a href="/admin/books" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary btn-lg"
+                  th:text="${book != null ? 'Update Book' : 'Create Book'}">
+            Create Book
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+</body>
+</html>

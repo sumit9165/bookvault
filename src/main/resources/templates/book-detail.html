@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta(${book.title})}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<main style="padding:3rem 0 5rem">
+  <div class="container-narrow">
+
+    <!-- Breadcrumb -->
+    <div style="margin-bottom:2rem;color:var(--text-muted);font-size:0.9rem">
+      <a href="/">Home</a> / <a href="/books">Library</a> /
+      <span th:text="${book.title}" class="text-secondary"></span>
+    </div>
+
+    <!-- Book Detail -->
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:3rem;align-items:start">
+      <!-- Cover -->
+      <div>
+        <div class="book-cover" style="aspect-ratio:3/4;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border-subtle);box-shadow:var(--shadow-card)">
+          <img th:if="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()}"
+               th:src="${book.coverImageUrl}" th:alt="${book.title}"
+               style="width:100%;height:100%;object-fit:cover"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+          <div class="book-cover-placeholder"
+               th:style="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()} ? 'display:none' : 'display:flex'"
+               style="height:100%">
+            📖
+            <span th:text="${book.title}"></span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="margin-top:1.5rem;display:flex;flex-direction:column;gap:0.75rem">
+          <th:block th:if="${canRead}">
+            <a th:if="${book.hasPdf}"
+               th:href="@{/books/{id}/read(id=${book.id})}"
+               class="btn btn-primary btn-full">📖 Read Now</a>
+            <div th:unless="${book.hasPdf}"
+                 class="btn btn-ghost btn-full" style="opacity:0.5;cursor:not-allowed">No PDF available</div>
+          </th:block>
+          <th:block th:unless="${canRead}">
+            <a href="/login" class="btn btn-primary btn-full">🔒 Sign In to Read</a>
+            <a href="/register" class="btn btn-outline btn-full">Join Free</a>
+          </th:block>
+          <sec:authorize access="hasRole('ADMIN')">
+            <a th:href="@{/admin/books/{id}/edit(id=${book.id})}"
+               class="btn btn-ghost btn-full btn-sm">✏️ Edit Book</a>
+          </sec:authorize>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div>
+        <div style="margin-bottom:0.75rem">
+          <span th:if="${book.genre}" class="book-genre-badge" th:text="${book.genre}">Genre</span>
+        </div>
+
+        <h1 style="font-size:2rem;margin-bottom:0.5rem" th:text="${book.title}">Title</h1>
+        <p style="font-size:1.2rem;color:var(--text-secondary);font-style:italic;margin-bottom:1.5rem"
+           th:text="'by ' + ${book.author}">by Author</p>
+
+        <!-- Meta pills -->
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:2rem">
+          <span class="book-version" th:text="'Version ' + ${book.versionRelease}">v1.0</span>
+          <span th:if="${book.language}" class="badge badge-gold" th:text="${book.language}">English</span>
+          <span th:if="${book.pageCount}" class="badge badge-gold" th:text="${book.pageCount} + ' pages'">300 pages</span>
+          <span class="badge badge-gold">👁 <span th:text="${book.viewCount}">0</span></span>
+          <span th:if="${book.hasPdf}" class="badge badge-green">📄 PDF Available</span>
+        </div>
+
+        <!-- Description -->
+        <div th:if="${book.description}" style="margin-bottom:2rem">
+          <h3 style="font-size:1rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem">About this book</h3>
+          <p th:text="${book.description}" style="line-height:1.8;color:var(--text-secondary)">Description…</p>
+        </div>
+
+        <!-- Details table -->
+        <div style="background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden">
+          <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border-subtle);font-family:var(--font-display);font-size:1rem">
+            Book Details
+          </div>
+          <div style="padding:0.5rem 0">
+            <div th:if="${book.isbn}" style="display:grid;grid-template-columns:140px 1fr;padding:0.65rem 1.25rem;border-bottom:1px solid var(--border-subtle)">
+              <span class="text-muted text-sm">ISBN</span>
+              <span class="text-mono text-sm" th:text="${book.isbn}"></span>
+            </div>
+            <div th:if="${book.publisher}" style="display:grid;grid-template-columns:140px 1fr;padding:0.65rem 1.25rem;border-bottom:1px solid var(--border-subtle)">
+              <span class="text-muted text-sm">Publisher</span>
+              <span class="text-sm" th:text="${book.publisher}"></span>
+            </div>
+            <div style="display:grid;grid-template-columns:140px 1fr;padding:0.65rem 1.25rem;border-bottom:1px solid var(--border-subtle)">
+              <span class="text-muted text-sm">Added by</span>
+              <span class="text-sm" th:text="${book.createdByUsername}"></span>
+            </div>
+            <div style="display:grid;grid-template-columns:140px 1fr;padding:0.65rem 1.25rem;border-bottom:1px solid var(--border-subtle)">
+              <span class="text-muted text-sm">Created</span>
+              <span class="text-sm text-mono" th:text="${book.createdAt}"></span>
+            </div>
+            <div style="display:grid;grid-template-columns:140px 1fr;padding:0.65rem 1.25rem">
+              <span class="text-muted text-sm">Last updated</span>
+              <span class="text-sm text-mono" th:text="${book.updatedAt}"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: footer}"/>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+</body>
+</html>

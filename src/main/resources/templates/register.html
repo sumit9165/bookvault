@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('Create Account')}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<main class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">📚</div>
+      <h1 style="font-size:1.8rem;margin-bottom:0.25rem">Join BookVault</h1>
+      <p class="text-muted">Create your free account and start reading</p>
+    </div>
+
+    <div id="registerError" class="alert alert-error hidden"></div>
+
+    <form onsubmit="submitRegister(event)">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input name="username" type="text" class="form-control"
+               placeholder="yourname123" autocomplete="username" required
+               minlength="3" maxlength="50"
+               pattern="[a-zA-Z0-9_]+"
+               title="Letters, numbers and underscores only"/>
+        <div class="form-error" id="usernameHint" style="color:var(--text-muted)">
+          Letters, numbers and underscores only (3–50 chars)
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input name="email" type="email" class="form-control"
+               placeholder="you@example.com" autocomplete="email" required/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div style="position:relative">
+          <input id="password" name="password" type="password" class="form-control"
+                 placeholder="Min. 8 chars" required
+                 oninput="checkStrength(this.value)"/>
+          <button type="button" onclick="togglePassword('password',this)"
+                  style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer">👁</button>
+        </div>
+        <div id="strengthBar" style="height:3px;border-radius:2px;margin-top:0.4rem;transition:all 0.3s;background:var(--border-subtle)"></div>
+        <div id="strengthLabel" class="text-xs text-muted mt-1"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input id="confirmPassword" name="confirmPassword" type="password"
+               class="form-control" placeholder="Repeat password" required/>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top:0.5rem">
+        Create Account
+      </button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <p style="text-align:center;color:var(--text-secondary)">
+      Already have an account? <a href="/login" class="text-gold">Sign in</a>
+    </p>
+  </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+<script>
+function togglePassword(id, btn) {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function checkStrength(pw) {
+  const bar = document.getElementById('strengthBar');
+  const lbl = document.getElementById('strengthLabel');
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+  const labels = ['Weak','Fair','Good','Strong'];
+  bar.style.width = (score * 25) + '%';
+  bar.style.background = colors[score-1] || 'var(--border-subtle)';
+  lbl.textContent = score > 0 ? labels[score-1] : '';
+}
+</script>
+</body>
+</html>

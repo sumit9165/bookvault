@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- ── NAVBAR FRAGMENT ─────────────────────────────────────── -->
+<nav th:fragment="navbar" class="navbar">
+  <a class="navbar-brand" href="/">
+    <div class="brand-icon">📚</div>
+    BookVault
+  </a>
+
+  <ul class="navbar-nav">
+    <li><a class="nav-link" th:classappend="${#httpServletRequest.requestURI == '/' ? 'active' : ''}" href="/">Home</a></li>
+    <li><a class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/books') ? 'active' : ''}" href="/books">Library</a></li>
+    <li sec:authorize="isAuthenticated()">
+      <a class="nav-link" th:classappend="${#httpServletRequest.requestURI == '/dashboard' ? 'active' : ''}" href="/dashboard">My Books</a>
+    </li>
+    <li sec:authorize="hasRole('ADMIN')">
+      <a class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/admin') ? 'active' : ''}" href="/admin">Admin</a>
+    </li>
+  </ul>
+
+  <div class="navbar-actions">
+    <sec:authorize access="isAnonymous()">
+      <a href="/login" class="btn btn-ghost btn-sm">Sign In</a>
+      <a href="/register" class="btn btn-primary btn-sm">Join Free</a>
+    </sec:authorize>
+    <sec:authorize access="isAuthenticated()">
+      <span class="text-secondary text-sm" style="padding:0 0.5rem">
+        <span sec:authentication="name"></span>
+      </span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign Out</button>
+    </sec:authorize>
+  </div>
+</nav>
+
+<!-- ── HEAD META FRAGMENT ────────────────────────────────────── -->
+<th:block th:fragment="headMeta(pageTitle)">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title th:text="${pageTitle} + ' — BookVault'">BookVault</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>"/>
+</th:block>
+
+<!-- ── FOOTER FRAGMENT ─────────────────────────────────────── -->
+<footer th:fragment="footer" class="footer">
+  <p>© 2024 <strong class="text-gold">BookVault</strong> — A secure digital library platform</p>
+  <p class="mt-1 text-xs">Built with Spring Boot · MySQL · Redis</p>
+</footer>
+
+<!-- ── SCRIPTS FRAGMENT ────────────────────────────────────── -->
+<th:block th:fragment="scripts">
+  <script th:src="@{/js/main.js}"></script>
+</th:block>
+
+<!-- ── DELETE MODAL FRAGMENT ───────────────────────────────── -->
+<div th:fragment="deleteModal" id="deleteModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Delete Book</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete <strong id="deleteBookTitle" class="text-gold"></strong>?</p>
+      <p class="text-muted text-sm mt-1">This action can be undone by an administrator in the database.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+      <button id="confirmDeleteBtn" class="btn btn-danger">Delete Book</button>
+    </div>
+  </div>
+</div>
+
+</html>

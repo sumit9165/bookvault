@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('Manage Books')}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<div class="admin-layout">
+  <aside class="sidebar">
+    <ul class="sidebar-nav">
+      <li><a href="/admin" class="sidebar-link">📊 Dashboard</a></li>
+      <li><a href="/admin/books" class="sidebar-link active">📚 Manage Books</a></li>
+      <li><a href="/admin/books/new" class="sidebar-link">➕ Add Book</a></li>
+      <li><a href="/books" class="sidebar-link">🌐 Public Library</a></li>
+    </ul>
+  </aside>
+
+  <div class="main-content">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h1 style="font-size:1.8rem;margin-bottom:0.25rem">Manage Books</h1>
+        <p class="text-muted" id="bookCount">Loading…</p>
+      </div>
+      <a href="/admin/books/new" class="btn btn-primary">➕ Add New Book</a>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrapper mb-3" style="max-width:400px">
+      <span class="search-icon">🔍</span>
+      <input id="adminSearch" type="text" class="form-control search-input"
+             placeholder="Search books…" oninput="debounceAdminSearch(this.value)"/>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Version</th>
+              <th>Genre</th>
+              <th>Status</th>
+              <th>PDF</th>
+              <th>Views</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminBooksBody">
+            <tr><td colspan="10">
+              <div class="loading-screen"><div class="spinner"></div><span>Loading books…</span></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="adminPagination" class="pagination"></div>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: deleteModal}"/>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+<script>
+let currentPage = 0;
+let currentQuery = '';
+
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadBooks(page = 0, query = '') {
+  currentPage = page;
+  currentQuery = query;
+  const tbody = document.getElementById('adminBooksBody');
+  tbody.innerHTML = '<tr><td colspan="10"><div class="loading-screen"><div class="spinner"></div></div></td></tr>';
+  try {
+    const url = `/api/v1/books/admin/all?page=${page}&size=15${query ? '&query=' + encodeURIComponent(query) : ''}`;
+    const res = await API.get(url);
+    const data = res.data;
+
+    document.getElementById('bookCount').textContent = `${data.totalElements} books total`;
+
+    if (!data.content.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;padding:2rem">No books found.</td></tr>';
+      document.getElementById('adminPagination').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = data.content.map((b, i) => `
+      <tr>
+        <td class="text-muted text-xs">${(page * 15) + i + 1}</td>
+        <td>
+          <div style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+               title="${escHtml(b.title)}">${escHtml(b.title)}</div>
+        </td>
+        <td class="italic text-secondary" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(b.author)}</td>
+        <td><span class="book-version">v${escHtml(b.versionRelease)}</span></td>
+        <td class="text-sm text-muted">${escHtml(b.genre || '—')}</td>
+        <td><span class="badge ${b.isPublic ? 'badge-green' : 'badge-red'}">${b.isPublic ? 'Public' : 'Private'}</span></td>
+        <td>${b.hasPdf ? '<span class="badge badge-gold">✓ PDF</span>' : '<span class="text-muted text-xs">—</span>'}</td>
+        <td class="text-mono text-xs">${b.viewCount ?? 0}</td>
+        <td class="text-mono text-xs text-muted">${(b.updatedAt || '').substring(0,10)}</td>
+        <td>
+          <div style="display:flex;gap:0.35rem;flex-wrap:nowrap">
+            <a href="/books/${b.id}" class="btn btn-ghost btn-sm" title="View">👁</a>
+            <a href="/admin/books/${b.id}/edit" class="btn btn-outline btn-sm" title="Edit">✏️</a>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete(${b.id},'${escHtml(b.title)}')" title="Delete">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    // Render pagination
+    const pag = document.getElementById('adminPagination');
+    if (data.totalPages <= 1) { pag.innerHTML = ''; return; }
+    let pagHtml = '';
+    if (!data.first) pagHtml += `<button class="page-btn" onclick="loadBooks(${page-1},'${escHtml(query)}')">←</button>`;
+    for (let i = Math.max(0, page-2); i <= Math.min(data.totalPages-1, page+2); i++) {
+      pagHtml += `<button class="page-btn ${i===page?'active':''}" onclick="loadBooks(${i},'${escHtml(query)}')">${i+1}</button>`;
+    }
+    if (!data.last) pagHtml += `<button class="page-btn" onclick="loadBooks(${page+1},'${escHtml(query)}')">→</button>`;
+    pag.innerHTML = pagHtml;
+
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="10" class="text-muted" style="text-align:center;padding:2rem">${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+let debounceTimer;
+function debounceAdminSearch(q) {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => loadBooks(0, q.trim()), 400);
+}
+
+loadBooks();
+</script>
+</body>
+</html>

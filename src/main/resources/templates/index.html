@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('Home')}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<!-- ── HERO ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <span class="hero-eyebrow">The Digital Library</span>
+  <h1 class="hero-title">Your Library,<br/>Reimagined.</h1>
+  <p class="hero-sub">Discover, read, and manage thousands of books in a beautiful, secure digital vault.</p>
+  <div class="flex flex-center gap-2" style="flex-wrap:wrap">
+    <a href="/books" class="btn btn-primary btn-lg">Browse Library</a>
+    <sec:authorize access="isAnonymous()">
+      <a href="/register" class="btn btn-outline btn-lg">Join Free</a>
+    </sec:authorize>
+    <sec:authorize access="isAuthenticated()">
+      <a href="/dashboard" class="btn btn-outline btn-lg">My Dashboard</a>
+    </sec:authorize>
+  </div>
+
+  <!-- Floating stats -->
+  <div style="display:flex;justify-content:center;gap:3rem;margin-top:3.5rem;flex-wrap:wrap">
+    <div style="text-align:center">
+      <div style="font-family:var(--font-display);font-size:2rem;color:var(--gold-400);font-weight:700">10K+</div>
+      <div class="text-muted text-sm">Books Available</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-family:var(--font-display);font-size:2rem;color:var(--gold-400);font-weight:700">PDF</div>
+      <div class="text-muted text-sm">In-App Reader</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-family:var(--font-display);font-size:2rem;color:var(--gold-400);font-weight:700">100%</div>
+      <div class="text-muted text-sm">Secure & Private</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── GENRES ─────────────────────────────────────────────────── -->
+<section style="padding:1.5rem 0 2rem" th:if="${genres != null and !genres.empty}">
+  <div class="container">
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center">
+      <a href="/books" class="badge badge-gold" style="font-size:0.85rem;padding:0.4rem 1rem">All</a>
+      <a th:each="genre : ${genres}"
+         th:href="@{/books(genre=${genre})}"
+         th:text="${genre}"
+         class="badge badge-gold"
+         style="font-size:0.85rem;padding:0.4rem 1rem;cursor:pointer">Genre</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURED BOOKS ─────────────────────────────────────────── -->
+<section style="padding:2rem 0 4rem">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Recently Added</h2>
+      <a href="/books" class="btn btn-ghost btn-sm">View all →</a>
+    </div>
+
+    <div th:if="${featuredBooks != null and !#lists.isEmpty(featuredBooks.content)}"
+         class="books-grid">
+      <article th:each="book : ${featuredBooks.content}"
+               class="book-card"
+               th:onclick="|window.location.href='/books/${book.id}'|">
+        <div class="book-cover">
+          <img th:if="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()}"
+               th:src="${book.coverImageUrl}"
+               th:alt="${book.title}"
+               loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+          <div class="book-cover-placeholder"
+               th:style="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()} ? 'display:none' : 'display:flex'">
+            📖
+            <span th:text="${book.title}"></span>
+          </div>
+        </div>
+        <div class="book-info">
+          <h3 class="book-title" th:text="${book.title}">Book Title</h3>
+          <p class="book-author" th:text="${book.author}">Author Name</p>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+            <span class="book-version" th:text="'v' + ${book.versionRelease}">v1.0</span>
+            <span class="book-genre-badge" th:if="${book.genre}" th:text="${book.genre}">Genre</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div th:if="${featuredBooks == null or #lists.isEmpty(featuredBooks.content)}"
+         class="empty-state">
+      <span class="empty-icon">📚</span>
+      <h3>No books yet</h3>
+      <p>The library is being stocked. Check back soon!</p>
+      <sec:authorize access="hasRole('ADMIN')">
+        <a href="/admin/books/new" class="btn btn-primary mt-2">Add First Book</a>
+      </sec:authorize>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHY BOOKVAULT ──────────────────────────────────────────── -->
+<section style="padding:3rem 0 5rem;background:rgba(11,17,32,0.5);border-top:1px solid var(--border-subtle)">
+  <div class="container">
+    <h2 style="text-align:center;margin-bottom:3rem">Why BookVault?</h2>
+    <div class="grid-3">
+      <div style="text-align:center;padding:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:1rem">🔐</div>
+        <h3 style="font-size:1.1rem;margin-bottom:0.5rem">Secure by Design</h3>
+        <p class="text-muted">JWT authentication, CSRF protection, DDoS rate limiting and XSS prevention built-in.</p>
+      </div>
+      <div style="text-align:center;padding:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:1rem">📖</div>
+        <h3 style="font-size:1.1rem;margin-bottom:0.5rem">In-App PDF Reader</h3>
+        <p class="text-muted">Read your books directly in the browser with our beautiful built-in PDF viewer.</p>
+      </div>
+      <div style="text-align:center;padding:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:1rem">⚡</div>
+        <h3 style="font-size:1.1rem;margin-bottom:0.5rem">Redis-Powered Cache</h3>
+        <p class="text-muted">Lightning-fast page loads thanks to intelligent Redis caching on all book listings.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<th:block th:replace="~{fragments/layout :: footer}"/>
+<div id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+<script>
+window.addEventListener('scroll',()=>{
+  document.getElementById('scrollTop').classList.toggle('visible',window.scrollY>400)
+})
+</script>
+</body>
+</html>

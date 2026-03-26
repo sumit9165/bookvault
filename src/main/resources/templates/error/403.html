@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('Access Denied')}"/>
+  <style>
+    .error-page { min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem; }
+    .error-code { font-family:var(--font-mono); font-size:6rem; font-weight:700; color:#f87171; line-height:1; margin-bottom:1rem; text-shadow:0 0 60px rgba(239,68,68,0.3); }
+  </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+<main class="error-page">
+  <div>
+    <div class="error-code">403</div>
+    <h1 style="font-size:1.8rem;margin-bottom:0.75rem">Access Denied</h1>
+    <p class="text-muted" style="max-width:400px;margin:0 auto 2rem">
+      You don't have permission to view this page.
+      Please sign in with an account that has the required access.
+    </p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="/login" class="btn btn-primary">Sign In</a>
+      <a href="/" class="btn btn-outline">← Go Home</a>
+    </div>
+  </div>
+</main>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+</body>
+</html>

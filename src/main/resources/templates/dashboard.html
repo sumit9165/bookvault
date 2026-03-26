@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('My Dashboard')}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<main style="padding:3rem 0 5rem">
+  <div class="container">
+    <!-- Header -->
+    <div style="margin-bottom:3rem">
+      <h1 style="font-size:2rem;margin-bottom:0.5rem">
+        Welcome back, <span class="text-gold" sec:authentication="name">User</span>
+      </h1>
+      <p class="text-muted">Your personal reading space</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid-3 mb-4">
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div>
+          <div class="stat-value" th:text="${recentBooks.totalElements}">0</div>
+          <div class="stat-label">Books in Library</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📖</div>
+        <div>
+          <div class="stat-value">Free</div>
+          <div class="stat-label">Unlimited Access</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔒</div>
+        <div>
+          <div class="stat-value">Secure</div>
+          <div class="stat-label">JWT + Redis Session</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Books -->
+    <div class="section-header mb-3">
+      <h2 class="section-title">Recent Additions</h2>
+      <a href="/books" class="btn btn-ghost btn-sm">Browse All →</a>
+    </div>
+
+    <div th:if="${recentBooks != null and !#lists.isEmpty(recentBooks.content)}"
+         class="books-grid">
+      <article th:each="book : ${recentBooks.content}"
+               class="book-card"
+               th:onclick="|window.location.href='/books/${book.id}'|">
+        <div class="book-cover" style="aspect-ratio:3/4">
+          <img th:if="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()}"
+               th:src="${book.coverImageUrl}" th:alt="${book.title}" loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+          <div class="book-cover-placeholder"
+               th:style="${book.coverImageUrl != null and !book.coverImageUrl.isBlank()} ? 'display:none' : 'display:flex'"
+               style="height:100%">
+            📖<span th:text="${book.title}"></span>
+          </div>
+        </div>
+        <div class="book-info">
+          <h3 class="book-title" th:text="${book.title}">Title</h3>
+          <p class="book-author" th:text="${book.author}">Author</p>
+          <span class="book-version" th:text="'v' + ${book.versionRelease}">v1.0</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tips box -->
+    <div style="margin-top:3rem;padding:1.5rem 2rem;background:rgba(212,168,67,0.05);border:1px solid var(--border-subtle);border-radius:var(--radius-lg)">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--gold-400)">💡 Quick Tips</h3>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:0.5rem">
+        <li class="text-secondary text-sm">📖 Click any book to view details and read the PDF in-browser</li>
+        <li class="text-secondary text-sm">🔍 Use the search bar on the Library page to find books quickly</li>
+        <li class="text-secondary text-sm">🏷 Filter books by genre using the tag buttons</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: footer}"/>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+</body>
+</html>

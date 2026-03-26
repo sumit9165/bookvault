@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <th:block th:replace="~{fragments/layout :: headMeta('Admin Dashboard')}"/>
+</head>
+<body>
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: navbar}"/>
+
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section-label">Navigation</div>
+    <ul class="sidebar-nav">
+      <li><a href="/admin" class="sidebar-link active">📊 Dashboard</a></li>
+      <li><a href="/admin/books" class="sidebar-link">📚 Manage Books</a></li>
+      <li><a href="/admin/books/new" class="sidebar-link">➕ Add Book</a></li>
+    </ul>
+    <div class="sidebar-section-label">Quick Links</div>
+    <ul class="sidebar-nav">
+      <li><a href="/books" class="sidebar-link">🌐 Public Library</a></li>
+      <li><a href="/dashboard" class="sidebar-link">👤 My Profile</a></li>
+    </ul>
+  </aside>
+
+  <div class="main-content">
+    <div style="margin-bottom:2rem">
+      <h1 style="font-size:2rem;margin-bottom:0.25rem">Admin Dashboard</h1>
+      <p class="text-muted">Manage your library and content</p>
+    </div>
+
+    <div class="grid-4 mb-4">
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div><div class="stat-value" id="statTotalBooks"><span class="spinner"></span></div>
+        <div class="stat-label">Total Books</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div><div class="stat-value" id="statPublicBooks"><span class="spinner"></span></div>
+        <div class="stat-label">Public Books</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div><div class="stat-value" id="statUsers"><span class="spinner"></span></div>
+        <div class="stat-label">Registered Users</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏷</div>
+        <div><div class="stat-value" id="statGenres"><span class="spinner"></span></div>
+        <div class="stat-label">Genres</div></div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">Quick Actions</div>
+      <div class="card-body" style="display:flex;gap:1rem;flex-wrap:wrap">
+        <a href="/admin/books/new" class="btn btn-primary">➕ Add New Book</a>
+        <a href="/admin/books" class="btn btn-outline">📋 Manage Books</a>
+        <a href="/books" class="btn btn-ghost" target="_blank">🌐 View Public Site</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Recent Books</span>
+        <a href="/admin/books" class="btn btn-ghost btn-sm">View All →</a>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead><tr><th>Title</th><th>Author</th><th>Version</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="recentBooksBody">
+            <tr><td colspan="6"><div class="loading-screen"><div class="spinner"></div><span>Loading…</span></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="text-muted text-xs mt-2" id="lastRefreshed" style="text-align:right"></p>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: deleteModal}"/>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+<script>
+function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function loadDashboard() {
+  try {
+    const r = await API.get('/api/v1/admin/stats');
+    const s = r.data;
+    document.getElementById('statTotalBooks').textContent  = s.totalBooks  ?? '—';
+    document.getElementById('statPublicBooks').textContent = s.publicBooks ?? '—';
+    document.getElementById('statUsers').textContent       = s.totalUsers  ?? '—';
+    document.getElementById('statGenres').textContent      = s.totalGenres ?? '—';
+    document.getElementById('lastRefreshed').textContent   = 'Last refreshed: ' + new Date().toLocaleTimeString();
+  } catch(e) { console.error('Stats error:', e); }
+
+  try {
+    const r = await API.get('/api/v1/books/admin/all?size=8');
+    const books = r.data.content;
+    const tbody = document.getElementById('recentBooksBody');
+    if (!books.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:2rem">No books yet. <a href="/admin/books/new">Add the first one!</a></td></tr>';
+      return;
+    }
+    tbody.innerHTML = books.map(b => `
+      <tr>
+        <td><strong title="${escHtml(b.title)}" style="max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(b.title)}</strong></td>
+        <td class="italic text-secondary">${escHtml(b.author)}</td>
+        <td><span class="book-version">v${escHtml(b.versionRelease)}</span></td>
+        <td><span class="badge ${b.isPublic?'badge-green':'badge-red'}">${b.isPublic?'🌐 Public':'🔒 Private'}</span></td>
+        <td class="text-mono text-xs text-muted">${(b.createdAt||'').substring(0,10)}</td>
+        <td><div style="display:flex;gap:0.35rem">
+          <a href="/books/${b.id}" class="btn btn-ghost btn-sm">👁</a>
+          <a href="/admin/books/${b.id}/edit" class="btn btn-outline btn-sm">✏️</a>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete(${b.id},'${escHtml(b.title)}')">🗑</button>
+        </div></td>
+      </tr>`).join('');
+  } catch(e) {
+    document.getElementById('recentBooksBody').innerHTML =
+      `<tr><td colspan="6" class="text-muted" style="text-align:center;padding:2rem">${escHtml(e.message)}</td></tr>`;
+  }
+}
+loadDashboard();
+</script>
+</body>
+</html>
